@@ -1,0 +1,17 @@
+# System files
+.DS_Store
+
+# Project specific directories
+Input/
+Output/
+checkpoints/
+
+# Python
+__pycache__/
+*.pyc
+
+# Output files
+*.csv
+*.txt
+!requirements.txt
+!requirements_min.txt
