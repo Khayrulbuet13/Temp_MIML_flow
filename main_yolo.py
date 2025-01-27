@@ -14,8 +14,10 @@ from typing import Dict, Any
 from src import (
     CellAnalyze,
     CellPatchExtractor,
-    YOLOv5CellDetector,
-    CombinedModel,
+    # YOLOv5CellDetector,
+    TinyYOLOCellDetector,
+    # CombinedModel,
+    CombinedMiniModel,
     MLP,
     Tracker,
     CellSorterSimulator
@@ -25,10 +27,16 @@ from src import (
 logger = logging.getLogger(__name__)
 
 # Example transform (adapt to your model training)
+# val_transform = T.Compose([
+#     T.Resize((64, 64)),
+#     T.ToTensor(),
+#     T.Normalize((0.3622, 0.3622, 0.3622), (0.1403, 0.1403, 0.1403))
+# ])
+
 val_transform = T.Compose([
-    T.Resize((64, 64)),
+    T.Resize((48, 48)),
     T.ToTensor(),
-    T.Normalize((0.3622, 0.3622, 0.3622), (0.1403, 0.1403, 0.1403))
+    T.Normalize((0.3622), (0.1403))
 ])
 
 class RealTimeMIMLInference:
@@ -53,10 +61,11 @@ class RealTimeMIMLInference:
 
         # Build MLP for numeric properties
         mlp = MLP(input_size=3, hidden_size=32, output_size=16)
-        self.model = CombinedModel(mlp=mlp, n_classes=2, train_resnet=False)
+        # self.model = CombinedModel(mlp=mlp, n_classes=2, train_resnet=False)
+        self.model = CombinedMiniModel(mlp=mlp, n_classes=2, train_cnn=False)
 
         checkpoint = torch.load(model_path, map_location=self.device)
-        self.model.load_state_dict(checkpoint)
+        # self.model.load_state_dict(checkpoint)
         self.model.to(self.device)
         self.model.eval()
 
@@ -83,13 +92,14 @@ class RealTimeMIMLInference:
 
     def _preprocess_patch(self, patch: np.ndarray) -> torch.Tensor:
         """
-        Preprocess the 64x64 BGR patch for the ResNet.
+        Preprocess the patch for the TinyBackbone CNN.
 
         :param patch: NumPy array (H, W, 3) in BGR format.
-        :return: Torch tensor of shape (1, 3, 64, 64).
+        :return: Torch tensor of shape (1, 1, 48, 48).
         """
-        patch_rgb = cv2.cvtColor(patch, cv2.COLOR_BGR2RGB)
-        pil_img = Image.fromarray(patch_rgb)
+        # Convert BGR to grayscale
+        patch_gray = cv2.cvtColor(patch, cv2.COLOR_BGR2GRAY)
+        pil_img = Image.fromarray(patch_gray)
         patch_tensor = val_transform(pil_img).unsqueeze(0).to(self.device)
         return patch_tensor
 
@@ -174,8 +184,14 @@ def main():
     sorter = CellSorterSimulator(output_dir, cell_types=cell_types, debug=DEBUG)
 
     # Initialize detection, tracking, analysis, patch extraction, and inference
-    cell_detector = YOLOv5CellDetector(
-        model_path='checkpoints/yolov5.pt',
+    # cell_detector = YOLOv5CellDetector(
+    #     model_path='checkpoints/yolov5.pt',
+    #     device=device,
+    #     debug=DEBUG
+    # )
+    
+    cell_detector = TinyYOLOCellDetector(
+        model_path='checkpoints/tiny_yolo_2class_128x256_best.pth',
         device=device,
         debug=DEBUG
     )
@@ -199,9 +215,12 @@ def main():
 
         start_time = time.time()
 
+        # Convert frame to grayscale for TinyYOLO
+        frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        
         # Detect
         centers, boxes, weights = cell_detector.detect(
-            frame, 
+            frame_gray, 
             crop_x_start=trace_start, 
             crop_x_end=trace_end,
             resize_width=RESIZE_WIDTH, 

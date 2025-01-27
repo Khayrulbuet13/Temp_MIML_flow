@@ -73,7 +73,7 @@ class TinyBackbone(nn.Module):
         return x
 
 
-class CombinedModel(nn.Module):
+class CombinedMiniModel(nn.Module):
     """
     Combines a tiny CNN (for single-channel image features)
     with an MLP (for numeric features) and outputs class logits.
@@ -84,7 +84,7 @@ class CombinedModel(nn.Module):
         :param n_classes: Number of classes for the final classification.
         :param train_cnn: Whether to allow training of the CNN backbone.
         """
-        super(CombinedModel, self).__init__()
+        super(CombinedMiniModel, self).__init__()
 
         # Tiny CNN Backbone
         self.tiny_cnn = TinyBackbone(input_size=(1, 48, 48))

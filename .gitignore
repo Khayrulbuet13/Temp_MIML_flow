@@ -1,10 +1,15 @@
 # System files
 .DS_Store
+.history
 
 # Project specific directories
 Input/
 Output/
 checkpoints/
+LymphoMNIST/
+bac/
+inference_output/
+visualizations/
 
 # Python
 __pycache__/
@@ -13,5 +18,5 @@ __pycache__/
 # Output files
 *.csv
 *.txt
-!requirements.txt
 !requirements_min.txt
+!requirements_all.txt
